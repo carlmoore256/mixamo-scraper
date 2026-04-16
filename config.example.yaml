@@ -1,0 +1,32 @@
+browser:
+  profile_dir: ".mixamo-profile"
+  headless: false
+  login_timeout_seconds: 300
+  channel: "chrome"
+  chromium_sandbox: true
+
+target:
+  character_query: ""
+  character_exact_name: ""
+  force_character_select: false
+
+search:
+  animation_search_query: "walk"
+  max_items: 25
+  start_index: 0
+
+download:
+  format: "FBX Binary"
+  fps: "30"
+  include_skin: false
+  include_skinned_mesh: false
+  keyframe_reduction: "None"
+  animation_parameters: {}
+  capture_animation_parameters: true
+  delay_ms: 800
+  timeout_seconds: 120
+
+output:
+  output_dir: "output"
+  manifest_filename: "manifest.json"
+  skip_existing: true
