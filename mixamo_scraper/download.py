@@ -5,9 +5,11 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from playwright.sync_api import Download, Page
+from playwright.sync_api import Download, Error as PlaywrightError, Page
 
 from mixamo_scraper.config import DownloadConfig
+
+MAX_DOWNLOAD_RETRIES = 3
 
 
 @dataclass
@@ -83,17 +85,35 @@ def download_current_animation(
 
     _set_modal_options(page, settings)
 
-    with page.expect_download(timeout=settings.timeout_seconds * 1000) as download_info:
-        modal_dl = modal.locator("button:has-text('Download')")
-        if modal_dl.count() > 0:
-            modal_dl.first.click()
-        else:
-            page.get_by_role("button", name="Download").last.click()
-    download = download_info.value
-
     filename = sanitize_filename(f"{output_stem}.fbx")
     target_path = output_dir / filename
-    download.save_as(str(target_path))
+
+    for attempt in range(1, MAX_DOWNLOAD_RETRIES + 1):
+        try:
+            with page.expect_download(timeout=settings.timeout_seconds * 1000) as download_info:
+                modal_dl = modal.locator("button:has-text('Download')")
+                if modal_dl.count() > 0:
+                    modal_dl.first.click()
+                else:
+                    page.get_by_role("button", name="Download").last.click()
+            download = download_info.value
+            download.save_as(str(target_path))
+            break
+        except PlaywrightError as exc:
+            if attempt < MAX_DOWNLOAD_RETRIES:
+                print(f"  Download failed (attempt {attempt}/{MAX_DOWNLOAD_RETRIES}): {exc}")
+                time.sleep(2)
+                modal = page.locator(".asset-download-modal")
+                if modal.count() == 0:
+                    dl_button = page.get_by_role("button", name="Download")
+                    if dl_button.count() > 0:
+                        dl_button.first.click()
+                    modal.wait_for(state="visible", timeout=5000)
+                    time.sleep(0.3)
+                    _set_modal_options(page, settings)
+            else:
+                raise
+
     if settings.delay_ms > 0:
         time.sleep(settings.delay_ms / 1000.0)
 
