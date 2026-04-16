@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -9,54 +9,58 @@ import yaml
 
 @dataclass
 class BrowserConfig:
-    profile_dir: Path
-    headless: bool
-    login_timeout_seconds: int
-    channel: str
-    chromium_sandbox: bool
+    profile_dir: Path = field(default_factory=lambda: Path(".mixamo-profile").resolve())
+    headless: bool = False
+    login_timeout_seconds: int = 300
+    channel: str = "chrome"
+    chromium_sandbox: bool = True
 
 
 @dataclass
 class TargetConfig:
-    character_query: str
-    character_exact_name: str
-    force_character_select: bool
+    character_query: str = ""
+    character_exact_name: str = ""
+    force_character_select: bool = False
 
 
 @dataclass
 class SearchConfig:
-    animation_search_query: str
-    max_items: int
-    start_index: int
+    animation_search_query: str = ""
+    max_items: int = 25
+    start_index: int = 0
 
 
 @dataclass
 class DownloadConfig:
-    format: str
-    fps: str
-    include_skin: bool
-    include_skinned_mesh: bool
-    keyframe_reduction: str
-    delay_ms: int
-    timeout_seconds: int
-    animation_parameters: dict[str, Any]
-    capture_animation_parameters: bool
+    format: str = "FBX Binary"
+    fps: str = "30"
+    include_skin: bool = False
+    include_skinned_mesh: bool = False
+    keyframe_reduction: str = "None"
+    delay_ms: int = 800
+    timeout_seconds: int = 120
+    animation_parameters: dict[str, Any] = field(default_factory=dict)
+    capture_animation_parameters: bool = True
 
 
 @dataclass
 class OutputConfig:
-    output_dir: Path
-    manifest_filename: str
-    skip_existing: bool
+    output_dir: Path = field(default_factory=lambda: Path("output").resolve())
+    manifest_filename: str = "manifest.json"
+    skip_existing: bool = True
 
 
 @dataclass
 class AppConfig:
-    browser: BrowserConfig
-    target: TargetConfig
-    search: SearchConfig
-    download: DownloadConfig
-    output: OutputConfig
+    browser: BrowserConfig = field(default_factory=BrowserConfig)
+    target: TargetConfig = field(default_factory=TargetConfig)
+    search: SearchConfig = field(default_factory=SearchConfig)
+    download: DownloadConfig = field(default_factory=DownloadConfig)
+    output: OutputConfig = field(default_factory=OutputConfig)
+
+
+def default_config() -> AppConfig:
+    return AppConfig()
 
 
 def _as_dict(data: Any, key: str) -> dict[str, Any]:
@@ -97,7 +101,7 @@ def load_config(path: Path) -> AppConfig:
         ),
         search=SearchConfig(
             animation_search_query=str(search.get("animation_search_query", "")).strip(),
-            max_items=int(search.get("max_items", 0)),
+            max_items=int(search.get("max_items", 25)),
             start_index=int(search.get("start_index", 0)),
         ),
         download=DownloadConfig(
@@ -106,7 +110,7 @@ def load_config(path: Path) -> AppConfig:
             include_skin=bool(download.get("include_skin", False)),
             include_skinned_mesh=bool(download.get("include_skinned_mesh", False)),
             keyframe_reduction=str(download.get("keyframe_reduction", "None")).strip(),
-            delay_ms=int(download.get("delay_ms", 600)),
+            delay_ms=int(download.get("delay_ms", 800)),
             timeout_seconds=int(download.get("timeout_seconds", 120)),
             animation_parameters=dict(download.get("animation_parameters", {}) or {}),
             capture_animation_parameters=bool(download.get("capture_animation_parameters", True)),

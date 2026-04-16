@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 
 from mixamo_scraper.animation_params import apply_animation_parameters, capture_animation_parameters
-from mixamo_scraper.config import AppConfig, load_config
+from mixamo_scraper.config import AppConfig, default_config, load_config
 from mixamo_scraper.discover import activate_animation_card, apply_animation_search, collect_animation_items, select_character
 from mixamo_scraper.download import download_current_animation, sanitize_filename
 from mixamo_scraper.metadata import (
@@ -31,12 +31,70 @@ def _build_parser() -> argparse.ArgumentParser:
             "First run uses interactive login in a persistent browser profile."
         ),
         epilog=(
-            "Setup: pip install -r requirements.txt && playwright install chromium. "
-            "Run: python -m mixamo_scraper --config config.example.yaml"
+            "All options have sensible defaults. A config file is only needed "
+            "for advanced/repeated setups. CLI flags override config file values."
         ),
     )
-    parser.add_argument("--config", type=Path, default=Path("config.yaml"), help="Path to YAML config file")
+    parser.add_argument("--config", type=Path, default=None, help="Optional YAML config file (CLI flags override it)")
+
+    search = parser.add_argument_group("search")
+    search.add_argument("-q", "--query", dest="query", default=None, help="Animation search query (default: all)")
+    search.add_argument("--max", dest="max_items", type=int, default=None, help="Max animations to download (default: 25)")
+    search.add_argument("--start", dest="start_index", type=int, default=None, help="Start index in results (default: 0)")
+
+    dl = parser.add_argument_group("download")
+    dl.add_argument("--fps", default=None, help="FPS for exported animation (default: 30)")
+    dl.add_argument("--format", dest="dl_format", default=None, help="Export format (default: FBX Binary)")
+    dl.add_argument("--skin", action="store_true", default=None, help="Include skin in download")
+    dl.add_argument("--no-skin", dest="skin", action="store_false")
+    dl.add_argument("--keyframe-reduction", default=None, help="Keyframe reduction mode (default: None)")
+
+    char = parser.add_argument_group("character")
+    char.add_argument("--character", dest="character_query", default=None, help="Character search query")
+    char.add_argument("--character-exact", dest="character_exact_name", default=None, help="Exact character name")
+
+    out = parser.add_argument_group("output")
+    out.add_argument("-o", "--output-dir", dest="output_dir", type=Path, default=None, help="Output directory (default: output)")
+    out.add_argument("--no-skip-existing", dest="skip_existing", action="store_false", default=None, help="Re-download existing files")
+
+    browser = parser.add_argument_group("browser")
+    browser.add_argument("--headless", action="store_true", default=None, help="Run browser in headless mode")
+    browser.add_argument("--no-headless", dest="headless", action="store_false")
+    browser.add_argument("--profile-dir", dest="profile_dir", type=Path, default=None, help="Browser profile directory")
+
     return parser
+
+
+def _apply_cli_overrides(config: AppConfig, args: argparse.Namespace) -> AppConfig:
+    if args.query is not None:
+        config.search.animation_search_query = args.query
+    if args.max_items is not None:
+        config.search.max_items = args.max_items
+    if args.start_index is not None:
+        config.search.start_index = args.start_index
+    if args.fps is not None:
+        config.download.fps = args.fps
+    if args.dl_format is not None:
+        config.download.format = args.dl_format
+    if args.skin is not None:
+        config.download.include_skin = args.skin
+    if args.keyframe_reduction is not None:
+        config.download.keyframe_reduction = args.keyframe_reduction
+    if args.character_query is not None:
+        config.target.character_query = args.character_query
+        config.target.force_character_select = True
+    if args.character_exact_name is not None:
+        config.target.character_exact_name = args.character_exact_name
+        config.target.force_character_select = True
+    if args.output_dir is not None:
+        config.output.output_dir = args.output_dir.resolve()
+    if args.skip_existing is not None:
+        config.output.skip_existing = args.skip_existing
+    if args.headless is not None:
+        config.browser.headless = args.headless
+    if args.profile_dir is not None:
+        config.browser.profile_dir = args.profile_dir.resolve()
+    return config
 
 
 def _settings_dict(config: AppConfig) -> dict[str, object]:
@@ -182,8 +240,12 @@ def run(config: AppConfig) -> int:
 
 def main() -> int:
     args = _build_parser().parse_args()
-    config_path: Path = args.config.resolve()
-    if not config_path.exists():
-        raise FileNotFoundError(f"Config file not found: {config_path}")
-    config = load_config(config_path)
+    if args.config is not None:
+        config_path = args.config.resolve()
+        if not config_path.exists():
+            raise FileNotFoundError(f"Config file not found: {config_path}")
+        config = load_config(config_path)
+    else:
+        config = default_config()
+    config = _apply_cli_overrides(config, args)
     return run(config)
