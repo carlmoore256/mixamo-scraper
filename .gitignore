@@ -1,8 +1,6 @@
 .mixamo-profile/
 output/
 
-config.yaml
-
 __pycache__/
 *.py[cod]
 *$py.class

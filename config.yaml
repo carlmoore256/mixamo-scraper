@@ -1,0 +1,29 @@
+browser:
+  profile_dir: ".mixamo-profile"
+  headless: false
+  login_timeout_seconds: 300
+
+target:
+  character_query: "Y Bot"
+  character_exact_name: ""
+
+search:
+  animation_search_query: "dancing"
+  max_items: 25
+  start_index: 0
+
+download:
+  format: "FBX Binary"
+  fps: "30"
+  include_skin: false
+  include_skinned_mesh: false
+  keyframe_reduction: "None"
+  animation_parameters:
+    "In Place": true
+  delay_ms: 800
+  timeout_seconds: 120
+
+output:
+  output_dir: "output"
+  manifest_filename: "manifest.json"
+  skip_existing: true
