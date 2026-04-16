@@ -24,8 +24,14 @@ No config file needed — everything has sensible defaults and can be set via CL
 # download up to 25 "walk" animations
 python -m mixamo_scraper -q walk
 
+# download ALL walk animations without root motion
+python -m mixamo_scraper -q walk --max 0 --in-place
+
 # download 10 "idle" animations at 60 fps into a custom folder
 python -m mixamo_scraper -q idle --max 10 --fps 60 -o ./my-anims
+
+# set arbitrary animation parameters
+python -m mixamo_scraper -q walk --param "Overdrive=50" --param "Arm Space=80"
 
 # run headless (no visible browser window — requires an existing login session)
 python -m mixamo_scraper -q run --headless
@@ -41,12 +47,14 @@ Run `python -m mixamo_scraper --help` for the full list of options.
 | Flag | Description | Default |
 |------|-------------|---------|
 | `-q, --query` | Animation search query | *(all)* |
-| `--max` | Max animations to download | 25 |
+| `--max` | Max animations to download (0 = all) | 25 |
 | `--start` | Start index in results | 0 |
 | `--fps` | FPS for exported animation | 30 |
 | `--format` | Export format | FBX Binary |
 | `--skin / --no-skin` | Include skin in download | off |
 | `--keyframe-reduction` | Keyframe reduction mode | None |
+| `--in-place / --no-in-place` | Download without root motion | off |
+| `--param KEY=VALUE` | Set animation parameter (repeatable) | |
 | `--character` | Character search query | *(current)* |
 | `--character-exact` | Exact character name | |
 | `-o, --output-dir` | Output directory | output |

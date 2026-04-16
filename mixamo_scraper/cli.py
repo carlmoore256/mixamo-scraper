@@ -48,6 +48,10 @@ def _build_parser() -> argparse.ArgumentParser:
     dl.add_argument("--skin", action="store_true", default=None, help="Include skin in download")
     dl.add_argument("--no-skin", dest="skin", action="store_false")
     dl.add_argument("--keyframe-reduction", default=None, help="Keyframe reduction mode (default: None)")
+    dl.add_argument("--in-place", action="store_true", default=None, help="Download animations in place (no root motion)")
+    dl.add_argument("--no-in-place", dest="in_place", action="store_false")
+    dl.add_argument("--param", dest="params", action="append", metavar="KEY=VALUE",
+                    help="Set animation parameter (repeatable, e.g. --param 'Overdrive=50')")
 
     char = parser.add_argument_group("character")
     char.add_argument("--character", dest="character_query", default=None, help="Character search query")
@@ -80,6 +84,18 @@ def _apply_cli_overrides(config: AppConfig, args: argparse.Namespace) -> AppConf
         config.download.include_skin = args.skin
     if args.keyframe_reduction is not None:
         config.download.keyframe_reduction = args.keyframe_reduction
+    if args.in_place is not None:
+        config.download.animation_parameters["In Place"] = args.in_place
+    if args.params:
+        for item in args.params:
+            key, _, value = item.partition("=")
+            key = key.strip()
+            value = value.strip()
+            if value.lower() in ("true", "1", "yes"):
+                value = True
+            elif value.lower() in ("false", "0", "no"):
+                value = False
+            config.download.animation_parameters[key] = value
     if args.character_query is not None:
         config.target.character_query = args.character_query
         config.target.force_character_select = True

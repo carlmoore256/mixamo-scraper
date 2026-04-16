@@ -228,7 +228,8 @@ def activate_animation_card(page: Page, title: str, description: str = "") -> No
 def collect_animation_items(page: Page, max_items: int, start_index: int) -> list[AnimationItem]:
     seen: set[str] = set()
     items: list[AnimationItem] = []
-    needed = max_items + start_index
+    unlimited = max_items <= 0
+    needed = (max_items + start_index) if not unlimited else float("inf")
 
     def _clean_title(value: str) -> str:
         return " ".join(value.split()).strip()
@@ -314,4 +315,4 @@ def collect_animation_items(page: Page, max_items: int, start_index: int) -> lis
 
     if start_index > 0:
         items = items[start_index:]
-    return items[:max_items]
+    return items if unlimited else items[:max_items]
